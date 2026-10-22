@@ -41,7 +41,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorResponse> invalid(MethodArgumentNotValidException e) {
         String msg = e.getBindingResult().getFieldErrors().stream()
-                .map(f -> f.getField() + ": " + f.getDefaultMessage()).collect(Collectors.joining("; "));
+                .map(f -> {
+                    if ("email".equals(f.getField()) && "Pattern".equals(f.getCode())) {
+                        return "email: debe tener un formato de correo electrónico válido";
+                    }
+                    if ("idRoles".equals(f.getField()) && "Size".equals(f.getCode())) {
+                        return "idRoles: debes seleccionar al menos un rol";
+                    }
+                    return f.getField() + ": " + f.getDefaultMessage();
+                })
+                .collect(Collectors.joining("; "));
         return build(400, msg);
     }
 
