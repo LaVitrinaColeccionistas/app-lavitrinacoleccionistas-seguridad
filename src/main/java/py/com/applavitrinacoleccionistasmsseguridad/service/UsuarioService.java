@@ -1,0 +1,96 @@
+package py.com.applavitrinacoleccionistasmsseguridad.service;
+
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import py.com.applavitrinacoleccionistasmsseguridad.exception.ConflictException;
+import py.com.applavitrinacoleccionistasmsseguridad.mapper.IUsuarioMapper;
+import py.com.applavitrinacoleccionistasmsseguridad.repository.IRolRepository;
+import py.com.applavitrinacoleccionistasmsseguridad.repository.IUsuarioRepository;
+import py.com.lavitrinacoleccionistas.dto.UsuarioCreateDTO;
+import py.com.lavitrinacoleccionistas.dto.UsuarioDTO;
+import py.com.lavitrinacoleccionistas.dto.UsuarioPageDTO;
+import py.com.lavitrinacoleccionistas.dto.UsuarioUpdateDTO;
+import py.com.lavitrinacoleccionistas.entity.Rol;
+import py.com.lavitrinacoleccionistas.entity.Usuario;
+import py.com.lavitrinacoleccionistas.enums.EstadoUsuario;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UsuarioService {
+    private final IUsuarioRepository repo;
+    private final IRolRepository rolRepo;
+    private final PasswordEncoder encoder;
+    private final IUsuarioMapper mapper;
+
+    @Transactional(readOnly = true)
+    public UsuarioDTO obtener(Long id) {
+        return mapper.toDto(buscar(id));
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioPageDTO listar(String email, Pageable pageable) {
+        Page<UsuarioDTO> p = repo.findByEmailContainingIgnoreCase(email == null ? "" : email, pageable)
+                .map(mapper::toDto);
+        UsuarioPageDTO out = new UsuarioPageDTO();
+        out.setContent(p.getContent());
+        out.setTotalElements(p.getTotalElements());
+        out.setTotalPages(p.getTotalPages());
+        out.setSize(p.getSize());
+        out.setNumber(p.getNumber());
+        return out;
+    }
+
+    @Transactional
+    public UsuarioDTO crear(UsuarioCreateDTO dto) {
+        if (repo.existsByEmail(dto.getEmail())) throw new ConflictException("El email ya está registrado");
+        Usuario u = new Usuario();
+        u.setEmail(dto.getEmail());
+        u.setPassword(encoder.encode(dto.getPassword()));
+        u.setEstado(EstadoUsuario.ACTIVO);
+        u.setRoles(buscarRoles(dto.getIdRoles()));
+        return mapper.toDto(repo.save(u));
+    }
+
+    @Transactional
+    public UsuarioDTO actualizar(Long id, UsuarioUpdateDTO dto) {
+        Usuario u = buscar(id);
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(u.getEmail())) {
+            if (repo.existsByEmail(dto.getEmail())) throw new ConflictException("El email ya está registrado");
+            u.setEmail(dto.getEmail());
+        }
+        if (dto.getPassword() != null) u.setPassword(encoder.encode(dto.getPassword()));
+        if (dto.getEstado() != null) u.setEstado(EstadoUsuario.valueOf(dto.getEstado().name()));
+        if (dto.getIdRoles() != null) u.setRoles(buscarRoles(dto.getIdRoles()));
+        return mapper.toDto(repo.save(u));
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+        Usuario u = buscar(id);
+        u.setEstado(EstadoUsuario.SUSPENDIDO);
+        repo.save(u);
+        log.info("Usuario {} suspendido", id);
+    }
+
+    private Usuario buscar(Long id) {
+        return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + id));
+    }
+
+    private Set<Rol> buscarRoles(Set<Long> ids) {
+        List<Rol> roles = rolRepo.findAllById(ids);
+        if (roles.size() != ids.size()) throw new EntityNotFoundException("Algún rol no existe");
+        return new HashSet<>(roles);
+    }
+}
