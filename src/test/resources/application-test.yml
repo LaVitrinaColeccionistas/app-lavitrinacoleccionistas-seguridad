@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:seguridadtest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  liquibase:
+    enabled: false
+eureka:
+  client:
+    enabled: false
+app:
+  security:
+    jwt:
+      secret: s89W5Zc07urnsYaAK5yfPNfH2TPIn1+feecJRuJroes=
+  cache:
+    tipo: memoria

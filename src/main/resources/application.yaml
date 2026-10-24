@@ -19,6 +19,16 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+      ssl:
+        enabled: ${REDIS_SSL:false}
 
 eureka:
   client:
@@ -35,3 +45,17 @@ app:
       secret: ${JWT_SECRET}
       expiration: 30m
       issuer: lvc-auth
+  cache:
+    tipo: ${CACHE_TIPO:redis}
+    prefijo: ${CACHE_PREFIJO:lvc:seguridad:}
+    ttl-defecto: ${CACHE_TTL_DEFECTO:10m}
+    dominios:
+      usuario: ${CACHE_DOMINIO_USUARIO:usuario}
+      rol: ${CACHE_DOMINIO_ROL:rol}
+    ttl:
+      usuario: ${CACHE_TTL_USUARIOS:15m}
+      rol: ${CACHE_TTL_ROLES:0}
+
+logging:
+  level:
+    py.com.applavitrinacoleccionistasmsseguridad.cache: ${LOG_LEVEL_CACHE:DEBUG}
