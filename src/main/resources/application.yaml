@@ -58,6 +58,9 @@ app:
     ttl:
       usuario: ${CACHE_TTL_USUARIOS:15m}
       rol: ${CACHE_TTL_ROLES:0}
+    paquetes-permitidos:
+      - py.com.lavitrinacoleccionistas.
+      - java.
 
 logging:
   level:

@@ -9,13 +9,13 @@ import java.util.Map;
 
 @ConfigurationProperties(prefix = "app.cache")
 public record CacheProperties(
-        @DefaultValue("redis") String tipo,
-        @DefaultValue("lvc:seguridad:") String prefijo,
-        @DefaultValue("10m") Duration ttlDefecto,
-        @DefaultValue Dominios dominios,
+        String tipo,
+        String prefijo,
+        Duration ttlDefecto,
+        Dominios dominios,
         @DefaultValue Map<String, Duration> ttl,
-        @DefaultValue({"py.com.lavitrinacoleccionistas.", "java."}) List<String> paquetesPermitidos) {
+        List<String> paquetesPermitidos) {
 
-    public record Dominios(@DefaultValue("usuario") String usuario, @DefaultValue("rol") String rol) {
+    public record Dominios(String usuario, String rol) {
     }
 }
