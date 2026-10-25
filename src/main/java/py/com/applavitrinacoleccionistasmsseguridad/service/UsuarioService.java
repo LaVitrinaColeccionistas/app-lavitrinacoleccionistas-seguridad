@@ -27,6 +27,7 @@ import py.com.lavitrinacoleccionistas.dto.*;
 import py.com.lavitrinacoleccionistas.entity.Rol;
 import py.com.lavitrinacoleccionistas.entity.Usuario;
 import py.com.lavitrinacoleccionistas.enums.EstadoUsuario;
+import py.com.lavitrinacoleccionistas.enums.TipoRol;
 
 import java.util.HashSet;
 import java.util.List;
@@ -50,17 +51,32 @@ public class UsuarioService implements CacheDominio {
         return cacheProps.dominios().usuario();
     }
 
+
     @Transactional
     @CachePut(cacheResolver = DominioCacheResolver.NOMBRE, key = Claves.POR_RESULTADO)
     public UsuarioDTO registrar(RegistroDTO dto) {
-        if (repo.existsByEmail(dto.getEmail())) throw new ConflictException("El email ya está registrado");
-        Rol rol = rolRepo.findByTipoRol(registro.rol())
-                .orElseThrow(() -> new IllegalStateException("Rol de registro no configurado en la BD: " + registro.rol()));
+        if (repo.existsByEmail(dto.getEmail())) {
+            throw new ConflictException("El email ya está registrado");
+        }
+
+        Set<Long> idRoles = dto.getIdRoles();
+
+        if (idRoles == null || idRoles.isEmpty() || idRoles.size() > 2) {
+            throw new IllegalArgumentException("Debe seleccionar uno o dos roles");
+        }
+
+        Set<Rol> roles = buscarRoles(idRoles);
+
+        if (roles.stream().anyMatch(rol -> rol.getTipoRol() == TipoRol.ADMIN)) {
+            throw new IllegalArgumentException("No se permite registrar administradores");
+        }
+
         Usuario u = new Usuario();
         u.setEmail(dto.getEmail());
         u.setPassword(encoder.encode(dto.getPassword()));
         u.setEstado(registro.estado());
-        u.setRoles(new HashSet<>(Set.of(rol)));
+        u.setRoles(roles);
+
         UsuarioDTO creado = mapper.toDto(repo.save(u));
         log.info("Registro de usuario id={} estado={}", creado.getId(), registro.estado());
         return creado;

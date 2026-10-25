@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import java.util.Map;
 
 import java.util.stream.Collectors;
 
@@ -62,5 +63,10 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ErrorResponse> build(int status, String msg) {
         return ResponseEntity.status(status).body(new ErrorResponse(status, msg));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<ErrorResponse> argumentoInvalido(IllegalArgumentException e) {
+        return build(400, e.getMessage());
     }
 }
