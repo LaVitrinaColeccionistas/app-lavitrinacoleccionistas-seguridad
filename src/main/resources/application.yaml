@@ -45,6 +45,9 @@ app:
       secret: ${JWT_SECRET}
       expiration: 30m
       issuer: lvc-auth
+    registro:
+      rol: ${REGISTRO_ROL:COMPRADOR}
+      estado: ${REGISTRO_ESTADO:ACTIVO}
   cache:
     tipo: ${CACHE_TIPO:redis}
     prefijo: ${CACHE_PREFIJO:lvc:seguridad:}

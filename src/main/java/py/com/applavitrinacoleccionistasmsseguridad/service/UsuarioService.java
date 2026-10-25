@@ -4,6 +4,7 @@ package py.com.applavitrinacoleccionistasmsseguridad.service;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,14 +18,12 @@ import py.com.applavitrinacoleccionistasmsseguridad.cache.CacheDominio;
 import py.com.applavitrinacoleccionistasmsseguridad.cache.CacheProperties;
 import py.com.applavitrinacoleccionistasmsseguridad.cache.Claves;
 import py.com.applavitrinacoleccionistasmsseguridad.cache.DominioCacheResolver;
+import py.com.applavitrinacoleccionistasmsseguridad.config.RegistroProps;
 import py.com.applavitrinacoleccionistasmsseguridad.exception.ConflictException;
 import py.com.applavitrinacoleccionistasmsseguridad.mapper.IUsuarioMapper;
 import py.com.applavitrinacoleccionistasmsseguridad.repository.IRolRepository;
 import py.com.applavitrinacoleccionistasmsseguridad.repository.IUsuarioRepository;
-import py.com.lavitrinacoleccionistas.dto.UsuarioCreateDTO;
-import py.com.lavitrinacoleccionistas.dto.UsuarioDTO;
-import py.com.lavitrinacoleccionistas.dto.UsuarioPageDTO;
-import py.com.lavitrinacoleccionistas.dto.UsuarioUpdateDTO;
+import py.com.lavitrinacoleccionistas.dto.*;
 import py.com.lavitrinacoleccionistas.entity.Rol;
 import py.com.lavitrinacoleccionistas.entity.Usuario;
 import py.com.lavitrinacoleccionistas.enums.EstadoUsuario;
@@ -36,6 +35,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@EnableConfigurationProperties(RegistroProps.class)
 public class UsuarioService implements CacheDominio {
     private final IUsuarioRepository repo;
     private final IRolRepository rolRepo;
@@ -43,10 +43,27 @@ public class UsuarioService implements CacheDominio {
     private final IUsuarioMapper mapper;
     private final CacheProperties cacheProps;
     private final CacheDeObjetos cache;
+    private final RegistroProps registro;
 
     @Override
     public String dominioCache() {
         return cacheProps.dominios().usuario();
+    }
+
+    @Transactional
+    @CachePut(cacheResolver = DominioCacheResolver.NOMBRE, key = Claves.POR_RESULTADO)
+    public UsuarioDTO registrar(RegistroDTO dto) {
+        if (repo.existsByEmail(dto.getEmail())) throw new ConflictException("El email ya está registrado");
+        Rol rol = rolRepo.findByTipoRol(registro.rol())
+                .orElseThrow(() -> new IllegalStateException("Rol de registro no configurado en la BD: " + registro.rol()));
+        Usuario u = new Usuario();
+        u.setEmail(dto.getEmail());
+        u.setPassword(encoder.encode(dto.getPassword()));
+        u.setEstado(registro.estado());
+        u.setRoles(new HashSet<>(Set.of(rol)));
+        UsuarioDTO creado = mapper.toDto(repo.save(u));
+        log.info("Registro de usuario id={} estado={}", creado.getId(), registro.estado());
+        return creado;
     }
 
     @Transactional(readOnly = true)
