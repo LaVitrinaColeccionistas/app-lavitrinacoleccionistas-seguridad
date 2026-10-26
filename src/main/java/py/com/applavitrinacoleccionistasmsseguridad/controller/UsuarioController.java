@@ -3,7 +3,8 @@ package py.com.applavitrinacoleccionistasmsseguridad.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,8 +24,10 @@ public class UsuarioController {
     private final UsuarioService service;
 
     @GetMapping
-    public UsuarioPageDTO listar(@RequestParam(required = false) String email, Pageable pageable) {
-        return service.listar(email, pageable);
+    public UsuarioPageDTO listar(@RequestParam(required = false) String email,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "20") int size) {
+        return service.listar(email, PageRequest.of(page, size, Sort.by("id")));
     }
 
     @GetMapping("/{id}")
