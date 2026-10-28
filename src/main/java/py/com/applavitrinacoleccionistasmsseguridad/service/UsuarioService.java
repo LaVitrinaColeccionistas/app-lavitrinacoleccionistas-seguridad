@@ -28,6 +28,7 @@ import py.com.lavitrinacoleccionistas.entity.Rol;
 import py.com.lavitrinacoleccionistas.entity.Usuario;
 import py.com.lavitrinacoleccionistas.enums.EstadoUsuario;
 import py.com.lavitrinacoleccionistas.enums.TipoRol;
+import py.com.lavitrinacoleccionistas.entity.PerfilUsuario;
 
 import java.util.HashSet;
 import java.util.List;
@@ -77,8 +78,20 @@ public class UsuarioService implements CacheDominio {
         u.setEstado(registro.estado());
         u.setRoles(roles);
 
+        PerfilUsuario perfil = new PerfilUsuario();
+        perfil.setNombre(dto.getNombre().trim());
+        perfil.setApellido(dto.getApellido().trim());
+        perfil.setTelefono(dto.getTelefono());
+        perfil.setDireccionEnvio(dto.getDireccionEnvio());
+        perfil.setUsuario(u);
+
+        u.setPerfil(perfil);
+
         UsuarioDTO creado = mapper.toDto(repo.save(u));
-        log.info("Registro de usuario id={} estado={}", creado.getId(), registro.estado());
+
+        log.info("Registro de usuario id={} estado={}",
+                creado.getId(), registro.estado());
+
         return creado;
     }
 
@@ -145,5 +158,19 @@ public class UsuarioService implements CacheDominio {
         List<Rol> roles = rolRepo.findAllById(ids);
         if (roles.size() != ids.size()) throw new EntityNotFoundException("Algún rol no existe");
         return new HashSet<>(roles);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PerfilUsuarioDTO> obtenerNombres(List<Long> ids) {
+        return repo.findAllById(ids).stream()
+                .filter(u -> u.getPerfil() != null)
+                .map(u -> {
+                    PerfilUsuarioDTO dto = new PerfilUsuarioDTO();
+                    dto.setIdUsuario(u.getId());
+                    dto.setNombre(u.getPerfil().getNombre());
+                    dto.setApellido(u.getPerfil().getApellido());
+                    return dto;
+                })
+                .toList();
     }
 }

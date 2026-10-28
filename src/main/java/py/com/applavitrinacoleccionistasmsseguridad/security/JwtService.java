@@ -25,6 +25,10 @@ public class JwtService {
                 .issuedAt(now).expiresAt(now.plus(props.expiration()))
                 .claim("uid", u.getId())
                 .claim("roles", u.getRoles().stream().map(r -> r.getTipoRol().name()).toList())
+                .claim("nombre", u.getPerfil() != null
+                        ? u.getPerfil().getNombre() : "")
+                .claim("apellido", u.getPerfil() != null
+                        ? u.getPerfil().getApellido() : "")
                 .build();
         return encoder.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
